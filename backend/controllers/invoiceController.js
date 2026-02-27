@@ -6,6 +6,9 @@ const Firm = require("../models/Firm");
 // POST /api/invoices
 // ===============================
 exports.createInvoice = async (req, res) => {
+  if (!req.body.invoiceNumber) {
+    return res.status(400).json({ message: "invoiceNumber is required" });
+  }
   try {
     const {
       firmId,
@@ -13,18 +16,21 @@ exports.createInvoice = async (req, res) => {
       metalType,
       customerName,
       customerPhone,
-      items
+      customerAddress,
+      customerGstin,
+      items,
+      received,
     } = req.body;
 
     // Validate firm belongs to logged-in user
     const firm = await Firm.findOne({
       _id: firmId,
-      owner: req.user._id
+      owner: req.user._id,
     });
 
     if (!firm) {
       return res.status(403).json({
-        message: "Unauthorized firm access"
+        message: "Unauthorized firm access",
       });
     }
 
@@ -35,18 +41,22 @@ exports.createInvoice = async (req, res) => {
       metalType,
       customerName,
       customerPhone,
-      items
+      customerAddress,
+      customerGstin,
+      received,
+      items,
+      subTotal: req.body.subTotal,
+      grandTotal: req.body.grandTotal,
+      invoiceNumber: req.body.invoiceNumber,
     });
 
     res.status(201).json(invoice);
-
   } catch (error) {
     res.status(500).json({
-      message: error.message
+      message: error.message,
     });
   }
 };
-
 
 // ===============================
 // GET ALL INVOICES (User Only)
@@ -55,20 +65,18 @@ exports.createInvoice = async (req, res) => {
 exports.getInvoices = async (req, res) => {
   try {
     const invoices = await Invoice.find({
-      userId: req.user._id
+      userId: req.user._id,
     })
       .populate("firmId")
       .sort({ createdAt: -1 });
 
     res.json(invoices);
-
   } catch (error) {
     res.status(500).json({
-      message: error.message
+      message: error.message,
     });
   }
 };
-
 
 // ===============================
 // GET SINGLE INVOICE
@@ -78,24 +86,22 @@ exports.getSingleInvoice = async (req, res) => {
   try {
     const invoice = await Invoice.findOne({
       _id: req.params.id,
-      userId: req.user._id
+      userId: req.user._id,
     }).populate("firmId");
 
     if (!invoice) {
       return res.status(404).json({
-        message: "Invoice not found"
+        message: "Invoice not found",
       });
     }
 
     res.json(invoice);
-
   } catch (error) {
     res.status(500).json({
-      message: error.message
+      message: error.message,
     });
   }
 };
-
 
 // ===============================
 // UPDATE INVOICE
@@ -105,12 +111,12 @@ exports.updateInvoice = async (req, res) => {
   try {
     const invoice = await Invoice.findOne({
       _id: req.params.id,
-      userId: req.user._id
+      userId: req.user._id,
     });
 
     if (!invoice) {
       return res.status(404).json({
-        message: "Invoice not found"
+        message: "Invoice not found",
       });
     }
 
@@ -119,14 +125,12 @@ exports.updateInvoice = async (req, res) => {
     await invoice.save(); // triggers pre-save calculation
 
     res.json(invoice);
-
   } catch (error) {
     res.status(500).json({
-      message: error.message
+      message: error.message,
     });
   }
 };
-
 
 // ===============================
 // DELETE INVOICE
@@ -136,22 +140,21 @@ exports.deleteInvoice = async (req, res) => {
   try {
     const invoice = await Invoice.findOneAndDelete({
       _id: req.params.id,
-      userId: req.user._id
+      userId: req.user._id,
     });
 
     if (!invoice) {
       return res.status(404).json({
-        message: "Invoice not found"
+        message: "Invoice not found",
       });
     }
 
     res.json({
-      message: "Invoice deleted successfully"
+      message: "Invoice deleted successfully",
     });
-
   } catch (error) {
     res.status(500).json({
-      message: error.message
+      message: error.message,
     });
   }
 };

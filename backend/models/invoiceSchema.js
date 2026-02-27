@@ -26,13 +26,21 @@ const InvoiceSchema = new mongoose.Schema({
     required: true,
   },
   customerPhone: String,
+  customerAddress: String,
+  customerGstin: String,
 
   items: [
     {
       description: String,
+      huid: String,
+      hsn: String,
+      gsWt: Number,
+      lessWt: Number,
+      ntWt: Number,
+      purity: String,
       metal: {
         type: String,
-        enum: ["gold", "silver"],
+        enum: ["gold", "silver", "both"],
       },
       weight: Number,
       rate: Number,
@@ -44,10 +52,15 @@ const InvoiceSchema = new mongoose.Schema({
 
   subTotal: Number,
   grandTotal: Number,
+  received: {
+    type: Number,
+    default: 0
+  },
 
   invoiceNumber: {
     type: String,
     unique: true,
+    required: true
   }
 
 }, { timestamps: true });
