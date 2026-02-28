@@ -4,6 +4,7 @@ import { Tags, ArrowLeft, LogOut } from "lucide-react";
 
 import { toast } from "react-toastify";
 import ThemeToggle from "../components/ThemeToggle";
+import { apiFetch } from "../utils/api";
 
 const InvoiceType = () => {
   const navigate = useNavigate();
@@ -15,9 +16,11 @@ const InvoiceType = () => {
   useEffect(() => {
     const fetchTypes = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/invoice-types`);
-        const data = await res.json();
-        if (res.ok) setTypes(data);
+        const res = await apiFetch(`${import.meta.env.VITE_API_BASE_URL}/api/invoice-types`);
+        if (res && res.ok) {
+          const data = await res.json();
+          setTypes(data);
+        }
       } catch (err) {
         toast.error("Failed to load invoice types");
       }

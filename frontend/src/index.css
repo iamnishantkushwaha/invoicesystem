@@ -12,6 +12,10 @@
   --text-muted: #6b7280;
   --input-bg: rgba(255, 255, 255, 0.05);
   --card-hover-bg: rgba(255, 255, 255, 0.08);
+  --toastify-color-light: #ffffff;
+  --toastify-color-dark: #121212;
+  --toastify-color-success: #14b8a6;
+  --toastify-color-error: #ef4444;
 }
 
 .light {
@@ -76,6 +80,25 @@ input[type=number] {
 @media (min-width: 768px) {
   .page-container {
     padding: 2.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .invoice-container {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    color-scheme: light !important;
+    /* Ultimate defense against Tailwind 4 oklch/oklab injection */
+    --tw-ring-color: #000000 !important;
+    --tw-shadow-color: #000000 !important;
+    --tw-outline-color: #000000 !important;
+    --tw-ring-offset-color: #ffffff !important;
+  }
+
+  .invoice-container * {
+    border-color: #000000 !important;
+    outline-color: #000000 !important;
+    background-color: transparent;
   }
 }
 
@@ -253,7 +276,7 @@ input[type=number] {
 }
 
 .Toastify__toast--success {
-  border-bottom: 3px solid var(--teal-light) !important;
+  border-bottom: 3px solid #14b8a6 !important;
 }
 
 .Toastify__toast--info {
@@ -269,7 +292,7 @@ input[type=number] {
 }
 
 .Toastify__progress-bar--success {
-  background: var(--teal-light) !important;
+  background: #14b8a6 !important;
 }
 
 .Toastify__close-button {
@@ -284,4 +307,107 @@ input[type=number] {
 
 .Toastify__toast-icon {
   width: 20px !important;
+}
+
+/* Custom Dropdown Styles */
+.dropdown-container {
+  position: relative;
+  width: 100%;
+}
+
+.dropdown-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  cursor: pointer;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  background: rgba(10, 10, 10, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 1rem;
+  padding: 0.5rem;
+  z-index: 50;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  max-height: 250px;
+  overflow-y: auto;
+  animation: dropdown-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dropdown-option {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 150ms ease;
+  color: var(--text-secondary);
+}
+
+.dropdown-option:hover {
+  background: var(--card-hover-bg);
+  color: var(--text-primary);
+  transform: translateX(4px);
+}
+
+.dropdown-option.selected {
+  background: var(--teal-primary);
+  color: white;
+}
+
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.light .dropdown-menu {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+/* HIGH-PRIORITY COLOR FIX FOR HTML2CANVAS COMPATIBILITY */
+:root,
+.light,
+body,
+.invoice-container {
+  --teal-primary: #0d9488 !important;
+  --teal-light: #14b8a6 !important;
+  --teal-accent: #2dd4bf !important;
+  --text-primary: #ffffff !important;
+  --text-secondary: #9ca3af !important;
+  --text-muted: #6b7280 !important;
+  --bg-deep: #0a0a0a !important;
+
+  /* Resetting potential oklch/oklab from Tailwind 4 globals */
+  --bg-color: #0a0a0a;
+  --text-color: #ffffff;
+}
+
+.light,
+.light body,
+.light .invoice-container {
+  --text-primary: #0f172a !important;
+  --bg-deep: #f8fafc !important;
+  --text-secondary: #475569 !important;
+}
+
+.invoice-container,
+.invoice-container * {
+  /* Force HEX for any library that might be checking computed styles */
+  background-color: #ffffff;
+  color: #000000;
+  border-color: #000000;
 }

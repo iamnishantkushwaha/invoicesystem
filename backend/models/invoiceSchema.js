@@ -45,6 +45,9 @@ const InvoiceSchema = new mongoose.Schema({
       weight: Number,
       rate: Number,
       makingCharges: Number,
+      hallmarkCharges: Number,
+      basicAmt: Number,
+      finalMkg: Number,
       gstPercent: Number,
       total: Number,
     }
@@ -59,11 +62,15 @@ const InvoiceSchema = new mongoose.Schema({
 
   invoiceNumber: {
     type: String,
-    unique: true,
     required: true
-  }
+  },
+  cloudinaryUrl: String,
+  cloudinaryPublicId: String
 
 }, { timestamps: true });
+
+// Compound index for uniqueness per user
+InvoiceSchema.index({ userId: 1, invoiceNumber: 1 }, { unique: true });
 
 const Invoice = mongoose.model("Invoice", InvoiceSchema);
 module.exports = Invoice;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogIn, ShieldCheck } from "lucide-react";
 import { toast } from "react-toastify";
@@ -8,6 +8,13 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+
+  // If already logged in, jump to dashboard
+  useEffect(() => {
+    if (localStorage.getItem("token")) {
+      navigate("/dashboard");
+    }
+  }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -64,6 +71,22 @@ const Login = () => {
     }
   };
 
+  const handleEnterNavigation = (e) => {
+    if (e.key === "Enter") {
+      const target = e.target;
+      if (target.tagName === "BUTTON" && target.type === "submit") return;
+
+      e.preventDefault();
+      const form = e.currentTarget;
+      const focusableElements = Array.from(form.querySelectorAll('input:not([disabled]), button[type="submit"]'));
+      const index = focusableElements.indexOf(target);
+
+      if (index > -1 && index < focusableElements.length - 1) {
+        focusableElements[index + 1].focus();
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center p-6 relative">
       <ThemeToggle className="absolute top-6 right-6" />
@@ -82,7 +105,7 @@ const Login = () => {
           </div>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleLogin} onKeyDown={handleEnterNavigation} className="space-y-6">
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-theme-muted ml-1 uppercase tracking-widest">
               Email Address

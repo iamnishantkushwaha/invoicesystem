@@ -8,8 +8,14 @@ const {
   getInvoices,
   getSingleInvoice,
   updateInvoice,
-  deleteInvoice
+  deleteInvoice,
+  getInvoiceStats,
+  uploadInvoicePDF,
+  updateCloudinaryUrl,
+  getLastInvoiceNumber,
+  redirectCloudinary
 } = require("../controllers/invoiceController");
+const { upload } = require("../utils/cloudinary");
 
 // ==============================
 // CREATE INVOICE
@@ -22,6 +28,18 @@ router.post("/", protect, createInvoice);
 // GET /api/invoices
 // ==============================
 router.get("/", protect, getInvoices);
+
+// ==============================
+// GET LAST INVOICE NUMBER
+// GET /api/invoices/last-number
+// ==============================
+router.get("/last-number", protect, getLastInvoiceNumber);
+
+// ==============================
+// GET INVOICE STATS
+// GET /api/invoices/stats
+// ==============================
+router.get("/stats", protect, getInvoiceStats);
 
 // ==============================
 // GET SINGLE INVOICE BY ID
@@ -40,5 +58,17 @@ router.put("/:id", protect, updateInvoice);
 // DELETE /api/invoices/:id
 // ==============================
 router.delete("/:id", protect, deleteInvoice);
+
+// ==============================
+// UPDATE CLOUDINARY INFO
+// PATCH /api/invoices/:id/cloudinary
+// ==============================
+router.patch("/:id/cloudinary", protect, updateCloudinaryUrl);
+
+// UPLOAD PDF TO CLOUDINARY
+// POST - For actual upload | GET - For redirect to Cloudinary
+// ==============================
+router.post("/:id/upload", protect, upload.single("file"), uploadInvoicePDF);
+router.get("/:id/upload", protect, redirectCloudinary);
 
 module.exports = router;

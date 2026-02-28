@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, Plus, ArrowRight, LogOut, Search, Hash } from "lucide-react";
+import { Building2, Plus, ArrowRight, LogOut, Search, Hash, BarChart3, Clock, FileText, ExternalLink } from "lucide-react";
 import { toast } from "react-toastify";
 import ThemeToggle from "../components/ThemeToggle";
+import { apiFetch } from "../utils/api";
 
 const Dashboard = () => {
   const [firms, setFirms] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newFirm, setNewFirm] = useState({ name: "", address: "", gstNumber: "", phone: "" });
+  const [stats, setStats] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   const fetchFirms = async () => {
@@ -18,18 +21,34 @@ const Dashboard = () => {
       return;
     }
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/firms`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (res.ok) setFirms(data);
+      const res = await apiFetch(`${import.meta.env.VITE_API_BASE_URL}/api/firms`);
+      if (res && res.ok) {
+        const data = await res.json();
+        setFirms(data);
+      }
     } catch (err) {
       toast.error("Network error: Failed to fetch firms");
     }
   };
 
+  const fetchDashboardData = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    setLoading(true);
+    try {
+      // Fetch Stats
+      const statsRes = await apiFetch(`${import.meta.env.VITE_API_BASE_URL}/api/invoices/stats`);
+      if (statsRes && statsRes.ok) setStats(await statsRes.json());
+    } catch (err) {
+      console.error("Dashboard data fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchFirms();
+    fetchDashboardData();
   }, [navigate]);
 
   const selectFirm = (firm) => {
@@ -42,15 +61,11 @@ const Dashboard = () => {
     e.preventDefault();
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/firms`, {
+      const res = await apiFetch(`${import.meta.env.VITE_API_BASE_URL}/api/firms`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify(newFirm),
       });
-      if (res.ok) {
+      if (res && res.ok) {
         toast.success("Firm added successfully");
         setIsModalOpen(false);
         setNewFirm({ name: "", address: "", gstNumber: "", phone: "" });
@@ -64,9 +79,26 @@ const Dashboard = () => {
     }
   };
 
+  const handleEnterNavigation = (e) => {
+    if (e.key === "Enter") {
+      const target = e.target;
+      if (target.tagName === "BUTTON" && target.type === "submit") return;
+      if (target.tagName === "TEXTAREA") return; // Allow new lines in address
+
+      e.preventDefault();
+      const form = e.currentTarget;
+      const focusableElements = Array.from(form.querySelectorAll('input:not([disabled]), button[type="submit"]'));
+      const index = focusableElements.indexOf(target);
+
+      if (index > -1 && index < focusableElements.length - 1) {
+        focusableElements[index + 1].focus();
+      }
+    }
+  };
+
   const filteredFirms = firms.filter(f =>
     f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    f.gstNumber.toLowerCase().includes(searchTerm.toLowerCase())
+    f.gstNumber?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -93,6 +125,13 @@ const Dashboard = () => {
             </div>
             <ThemeToggle />
             <button
+              onClick={() => navigate("/history", { state: { from: "dashboard" } })}
+              className="p-3 rounded-xl bg-theme-teal/10 hover:bg-theme-teal text-theme-teal hover:text-white transition-all border border-theme-teal/20"
+              title="Invoice History"
+            >
+              <Clock className="w-5 h-5" />
+            </button>
+            <button
               onClick={() => {
                 localStorage.clear();
                 navigate("/");
@@ -106,45 +145,73 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Improved Simple Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredFirms.map((firm, index) => (
-            <button
-              key={firm._id}
-              onClick={() => selectFirm(firm)}
-              className="card-modern group text-left flex flex-col items-start h-full animate-fade-in"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <div className="w-12 h-12 rounded-xl bg-teal-500/10 flex items-center justify-center mb-6 text-teal-400 group-hover:bg-teal-500 group-hover:text-white transition-all duration-300 group-hover:rotate-6">
-                <Building2 className="w-6 h-6" />
+        {/* Quick Stats Section */}
+        {!loading && stats.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in">
+            <div className="card-modern !p-5 flex items-center gap-4 border-theme-teal/20 bg-theme-teal/5">
+              <div className="w-10 h-10 rounded-xl bg-theme-teal/20 flex items-center justify-center text-theme-teal">
+                <FileText className="w-5 h-5" />
               </div>
-              <h3 className="text-xl font-bold text-theme-primary mb-2 group-hover:text-theme-teal transition-all uppercase leading-tight">
-                {firm.name}
-              </h3>
-              <div className="mt-1 space-y-2 mb-8">
-                <span className="text-[10px] font-mono bg-white/5 py-1 px-2 rounded-md text-theme-muted border border-white/5 flex items-center gap-1 w-fit">
-                  <Hash className="w-3 h-3" /> {firm.gstNumber}
-                </span>
-                <p className="text-theme-secondary text-xs line-clamp-2 mt-2 leading-relaxed h-8">
-                  {firm.address}
-                </p>
+              <div>
+                <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest">Today's Invoices</p>
+                <h3 className="text-xl font-bold text-theme-primary">{stats[0]?.count || 0}</h3>
               </div>
-              <div className="mt-auto flex items-center gap-2 text-theme-teal font-bold text-xs opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all duration-300">
-                Access Unit <ArrowRight className="w-4 h-4" />
-              </div>
-            </button>
-          ))}
-
-          {/* Add New Unit Button */}
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="card-modern border-dashed border-white/20 flex flex-col items-center justify-center text-center p-10 hover:border-teal-500/50 group transition-all animate-fade-in delay-300"
-          >
-            <div className="w-14 h-14 rounded-full border-2 border-dashed border-gray-600 flex items-center justify-center mb-4 group-hover:border-teal-500 group-hover:bg-teal-500/5 transition-all duration-300">
-              <Plus className="w-8 h-8 text-gray-500 group-hover:text-teal-500 group-hover:rotate-90 transition-all duration-300" />
             </div>
-            <span className="text-xs font-bold text-theme-muted group-hover:text-theme-teal uppercase tracking-widest transition-colors">Register New Firm</span>
-          </button>
+            <div className="card-modern !p-5 flex items-center gap-4 border-white/5">
+              <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-theme-secondary">
+                <BarChart3 className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest">Total Sales</p>
+                <h3 className="text-xl font-bold text-theme-primary">₹{(stats[0]?.totalAmount || 0).toLocaleString()}</h3>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-6">
+          <h2 className="text-sm font-bold text-theme-secondary uppercase tracking-wider flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-theme-teal" /> Registered Units
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredFirms.map((firm, index) => (
+              <button
+                key={firm._id}
+                onClick={() => selectFirm(firm)}
+                className="card-modern group text-left flex flex-col items-start h-full animate-fade-in"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div className="w-12 h-12 rounded-xl bg-teal-500/10 flex items-center justify-center mb-6 text-teal-400 group-hover:bg-teal-500 group-hover:text-white transition-all duration-300 group-hover:rotate-6">
+                  <Building2 className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold text-theme-primary mb-2 group-hover:text-theme-teal transition-all uppercase leading-tight">
+                  {firm.name}
+                </h3>
+                <div className="mt-1 space-y-2 mb-8">
+                  <span className="text-[10px] font-mono bg-white/5 py-1 px-2 rounded-md text-theme-muted border border-white/5 flex items-center gap-1 w-fit">
+                    <Hash className="w-3 h-3" /> {firm.gstNumber}
+                  </span>
+                  <p className="text-theme-secondary text-xs line-clamp-2 mt-2 leading-relaxed h-8">
+                    {firm.address}
+                  </p>
+                </div>
+                <div className="mt-auto flex items-center gap-2 text-theme-teal font-bold text-xs opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all duration-300">
+                  Access Unit <ArrowRight className="w-4 h-4" />
+                </div>
+              </button>
+            ))}
+
+            {/* Add New Unit Button */}
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="card-modern border-dashed border-white/20 flex flex-col items-center justify-center text-center p-10 hover:border-teal-500/50 group transition-all animate-fade-in"
+            >
+              <div className="w-14 h-14 rounded-full border-2 border-dashed border-gray-600 flex items-center justify-center mb-4 group-hover:border-teal-500 group-hover:bg-teal-500/5 transition-all duration-300">
+                <Plus className="w-8 h-8 text-gray-500 group-hover:text-teal-500 group-hover:rotate-90 transition-all duration-300" />
+              </div>
+              <span className="text-[10px] font-bold text-theme-muted group-hover:text-theme-teal transition-colors uppercase tracking-widest">Add New Unit</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -159,7 +226,7 @@ const Dashboard = () => {
               </button>
             </div>
 
-            <form onSubmit={handleAddFirm} className="space-y-4">
+            <form onSubmit={handleAddFirm} onKeyDown={handleEnterNavigation} className="space-y-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-theme-muted uppercase ml-1">Firm Name</label>
                 <input

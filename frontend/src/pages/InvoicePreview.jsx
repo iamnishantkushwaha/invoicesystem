@@ -1,12 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Printer, ArrowLeft } from "lucide-react";
+import { Printer, ArrowLeft, Eye, CloudUpload } from "lucide-react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import ThemeToggle from "../components/ThemeToggle";
+import { toast } from "react-toastify";
+import { apiFetch } from "../utils/api";
 
 const InvoicePreview = () => {
   const navigate = useNavigate();
   const printRef = useRef(null);
   const [data, setData] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState("idle"); // idle, uploading, success, error
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("generatedInvoice") || "{}");
@@ -24,6 +29,19 @@ const InvoicePreview = () => {
       setData(stored);
     }
   }, []);
+
+  const hasUploaded = useRef(false);
+  useEffect(() => {
+    console.log("Auto-Upload Check - _id:", data?._id, "hasUrl:", !!data?.cloudinaryUrl, "hasUploaded:", hasUploaded.current);
+    if (data && data._id && !data.cloudinaryUrl && !hasUploaded.current) {
+      console.log("All conditions met. Starting 500ms timer...");
+      hasUploaded.current = true;
+      setTimeout(() => {
+        console.log("Timer complete! Invoking uploadToCloudinary...");
+        uploadToCloudinary();
+      }, 500);
+    }
+  }, [data]);
 
   if (!data) {
     return (
@@ -52,6 +70,92 @@ const InvoicePreview = () => {
 
   const handlePrint = () => {
     window.print();
+    toast.info("Returning to Builder...", {
+      autoClose: 1500,
+      position: "top-center",
+      theme: "colored"
+    });
+    setTimeout(() => {
+      navigate("/invoice-form");
+    }, 1500);
+  };
+
+  const uploadToCloudinary = async () => {
+    console.log("uploadToCloudinary invoked.");
+    if (!printRef.current) {
+      console.warn("printRef.current is NULL. Aborting upload.");
+      return;
+    }
+    console.log("printRef.current is valid. Starting upload flow...");
+    setUploadStatus("uploading");
+    try {
+      const element = printRef.current;
+      console.log("Starting PDF generation for element:", element);
+
+      const canvas = await html2canvas(element, {
+        scale: 1.5, // Reduced from 2.0 to save space
+        useCORS: true,
+        logging: true,
+        backgroundColor: "#ffffff",
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.querySelector(".invoice-container");
+          if (clonedElement) {
+            clonedElement.style.color = "#000000";
+            clonedElement.style.backgroundColor = "#ffffff";
+            const allElements = clonedElement.querySelectorAll("*");
+            allElements.forEach(el => {
+              const style = window.getComputedStyle(el);
+              if (style.color.includes("oklab") || style.color.includes("oklch")) el.style.color = "#000000";
+              if (style.borderColor.includes("oklab") || style.borderColor.includes("oklch")) el.style.borderColor = "#000000";
+              if (style.backgroundColor.includes("oklab") || style.backgroundColor.includes("oklch")) {
+                el.style.backgroundColor = "#f3f4f6";
+              }
+            });
+          }
+        }
+      });
+
+      // Use JPEG with 0.8 quality instead of PNG to drastically reduce file size
+      const imgData = canvas.toDataURL("image/jpeg", 0.8);
+      const pdf = new jsPDF({
+        orientation: "p",
+        unit: "mm",
+        format: "a4",
+        compress: true // Enable internal PDF compression
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+      const pdfBlob = pdf.output("blob");
+      const pdfFile = new File([pdfBlob], `invoice_${invoiceNo}.pdf`, { type: "application/pdf" });
+
+      // We'll use a signed upload approach or proxy through our backend if needed.
+      // For simplicity and security, we'll send it to our backend which handles Cloudinary.
+      const formData = new FormData();
+      formData.append("file", pdfFile);
+
+      const token = localStorage.getItem("token"); // Still needed for console log or other logic
+      console.log("Preparing to fetch:", `${import.meta.env.VITE_API_BASE_URL}/api/invoices/${data._id}/upload`);
+      const res = await apiFetch(`${import.meta.env.VITE_API_BASE_URL}/api/invoices/${data._id}/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res && res.ok) {
+        const updatedInvoice = await res.json();
+        toast.success("Invoice Ready & Saved!", { autoClose: 2000 });
+        setData(updatedInvoice);
+        setUploadStatus("success");
+      } else {
+        const errorData = await res.json().catch(() => ({ message: "Unknown error" }));
+        toast.error(`Sync failed: ${errorData.message}`);
+        setUploadStatus("error");
+      }
+    } catch (err) {
+      toast.error("Cloud Error: " + err.message);
+      setUploadStatus("error");
+    }
   };
 
   const numberToWords = (num) => {
@@ -89,6 +193,59 @@ const InvoicePreview = () => {
             >
               <Printer className="w-4 h-4" /> Print
             </button>
+            {/* Live Upload Status Indicator */}
+            <div className="flex items-center gap-3">
+              {uploadStatus === "uploading" && (
+                <div className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-400">
+                  <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Uploading to Cloud...</span>
+                </div>
+              )}
+
+              {((uploadStatus === "success" || uploadStatus === "idle") && data?.cloudinaryUrl) && (
+                <div className="flex items-center gap-2">
+                  <a
+                    href={data.cloudinaryUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-2 py-2.5 px-6 rounded-xl bg-green-500/20 border border-green-500/50 text-green-400 transition-all text-xs font-bold uppercase tracking-wider hover:bg-green-500/30 group shadow-lg shadow-green-500/10"
+                  >
+                    <div className="w-2 h-2 rounded-full bg-green-400" />
+                    Uploaded
+                    <Eye className="w-4 h-4 ml-1 group-hover:scale-110 transition-transform" />
+                  </a>
+                  <button
+                    onClick={() => {
+                      hasUploaded.current = false;
+                      uploadToCloudinary();
+                    }}
+                    className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-theme-muted hover:text-theme-teal transition-all hover:bg-white/10"
+                    title="Re-upload PDF"
+                  >
+                    <CloudUpload className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {uploadStatus === "error" && (
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400">
+                    <div className="w-2 h-2 rounded-full bg-red-400" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-nowrap">Upload Fail</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      hasUploaded.current = false;
+                      uploadToCloudinary();
+                    }}
+                    className="p-2 rounded-xl bg-white/5 border border-white/10 text-theme-muted hover:text-theme-teal transition-all hover:bg-white/10"
+                    title="Retry Upload"
+                  >
+                    <CloudUpload className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -110,14 +267,11 @@ const InvoicePreview = () => {
           </div>
 
           <div className="flex-1 text-center flex flex-col items-center">
-            <h1 className="text-5xl font-black text-gray-800 tracking-tighter mb-0" style={{ fontFamily: 'sans-serif' }}>
-              AARAMBH
+            <h1 className="text-4xl font-black text-gray-800 tracking-tighter mb-2 uppercase" style={{ fontFamily: 'sans-serif' }}>
+              {firm.name || "AARAMBH JEWELS"}
             </h1>
-            <h2 className="text-5xl font-black text-gray-800 tracking-tighter mb-2" style={{ fontFamily: 'sans-serif' }}>
-              JEWELS
-            </h2>
-            <p className="text-xl font-bold tracking-[0.2em] text-gray-700">GOLD AND SILVER</p>
-            <p className="text-sm font-bold text-gray-600">STORE KESLA</p>
+            <p className="text-xl font-bold tracking-[0.2em] text-gray-700 mb-1">GOLD AND SILVER</p>
+            <p className="text-sm font-bold text-gray-600 uppercase">{firm.address || "STORE KESLA"}</p>
             <p className="text-sm font-bold text-gray-600 uppercase">Phone : {firm.phone || "8827375018"}</p>
           </div>
 
@@ -170,22 +324,29 @@ const InvoicePreview = () => {
             </thead>
             <tbody>
               {items.map((item, idx) => (
-                <tr key={idx} className="border-b-2 border-black h-8 align-middle">
-                  <td className="border-r-2 border-black px-1 text-left">{item.description?.toUpperCase() || item.prodName?.toUpperCase()}</td>
-                  <td className="border-r-2 border-black px-1 uppercase font-mono text-[9px]">{item.huid || "-"}</td>
+                <tr key={idx} className="border-b-2 border-black h-12 align-middle">
+                  <td className="border-r-2 border-black px-1 text-left font-bold">{item.description?.toUpperCase() || item.prodName?.toUpperCase()}</td>
+                  <td className="border-r-2 border-black px-1 uppercase font-mono text-[9px] leading-tight">{item.huid || "-"}</td>
                   <td className="border-r-2 border-black px-1">{item.hsn || "7113"}</td>
-                  <td className="border-r-2 border-black px-1">{parseFloat(item.gsWt || item.weight || 0).toFixed(3)} GM</td>
-                  <td className="border-r-2 border-black px-1">{item.lessWt || "-"}</td>
-                  <td className="border-r-2 border-black px-1">{parseFloat(item.ntWt || item.weight || 0).toFixed(3)} GM</td>
-                  <td className="border-r-2 border-black px-1">{item.purity || "84"} %</td>
-                  <td className="border-r-2 border-black px-1 font-mono">{parseFloat(item.rate || 0).toFixed(0)}</td>
                   <td className="border-r-2 border-black px-1">
-                    {item.mkgCharg || item.makingCharges || 0} GM
+                    <div>{parseFloat(item.gsWt || 0).toFixed(3)}</div>
+                    <div className="text-[8px] font-bold">GM</div>
                   </td>
-                  <td className="border-r-2 border-black px-1 font-mono">{parseFloat(item.amount || (item.ntWt * item.rate) || 0).toFixed(2)}</td>
-                  <td className="border-r-2 border-black px-1 font-mono">{parseFloat(item.finalMkg || ((item.ntWt || item.weight || 0) * (item.mkgCharg || 0))).toFixed(1)}</td>
-                  <td className="border-r-2 border-black px-1">{item.hallmark || item.hallmarkCharges || 0}</td>
-                  <td className="px-1 font-bold font-mono">{parseFloat(item.total || item.finalAmt || 0).toFixed(2)}</td>
+                  <td className="border-r-2 border-black px-1">{item.lessWt || "-"}</td>
+                  <td className="border-r-2 border-black px-1">
+                    <div>{parseFloat(item.ntWt || 0).toFixed(3)}</div>
+                    <div className="text-[8px] font-bold">GM</div>
+                  </td>
+                  <td className="border-r-2 border-black px-1">{item.purity || "84"} %</td>
+                  <td className="border-r-2 border-black px-1 font-mono">{parseFloat(item.rate || 0).toLocaleString()}</td>
+                  <td className="border-r-2 border-black px-1">
+                    <div>{item.makingCharges || item.mkgCharg || 0}</div>
+                    <div className="text-[8px] font-bold">GM</div>
+                  </td>
+                  <td className="border-r-2 border-black px-1 font-mono">{parseFloat(item.basicAmt || (item.ntWt * item.rate / 10) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td className="border-r-2 border-black px-1 font-mono">{parseFloat(item.finalMkg || ((item.ntWt || 0) * (item.makingCharges || 0))).toFixed(1)}</td>
+                  <td className="border-r-2 border-black px-1">{item.hallmarkCharges || item.hallmark || 0}</td>
+                  <td className="px-1 font-bold font-mono">{parseFloat(item.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 </tr>
               ))}
             </tbody>

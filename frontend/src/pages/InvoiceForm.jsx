@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import "../animations.css";
 import { useNavigate } from "react-router-dom";
-import { Plus, Trash2, Save, Printer, ArrowLeft, User, MapPin, Phone, Hash, Calendar, Tags } from "lucide-react";
+import { Plus, Trash2, Save, Printer, ArrowLeft, User, MapPin, Phone, Hash, Calendar, Tags, Clock } from "lucide-react";
 import { toast } from "react-toastify";
 import ThemeToggle from "../components/ThemeToggle";
+import { apiFetch } from "../utils/api";
 
 const InvoiceForm = () => {
   const navigate = useNavigate();
@@ -19,9 +20,38 @@ const InvoiceForm = () => {
   });
 
   const [invoiceMeta, setInvoiceMeta] = useState({
-    invoiceNo: "INV-" + Math.floor(1000 + Math.random() * 9000),
-    date: new Date().toISOString().split("T")[0],
+    invoiceNo: "IS/...",
+    date: new Date().toLocaleDateString('en-CA'), // Robust YYYY-MM-DD in local time
   });
+
+  useEffect(() => {
+    const fetchLastInvoiceNo = async () => {
+      if (!selectedFirm?._id) return;
+
+      try {
+        const res = await apiFetch(`${import.meta.env.VITE_API_BASE_URL}/api/invoices/last-number`);
+        if (res.ok) {
+          const { lastNumber } = await res.json();
+
+          // Regex to split prefix from numeric part (e.g., "IS/1", "INV-2", "3")
+          // Matches non-digits at start as prefix, digits at end as number
+          const match = lastNumber.match(/^([^0-9]*)([0-9]+)$/);
+
+          if (match) {
+            const prefix = match[1] || "IS/";
+            const num = parseInt(match[2]) || 0;
+            setInvoiceMeta(prev => ({ ...prev, invoiceNo: `${prefix}${num + 1}` }));
+          } else {
+            // Fallback for non-standard formats
+            setInvoiceMeta(prev => ({ ...prev, invoiceNo: "IS/1" }));
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching last invoice number:", err);
+      }
+    };
+    fetchLastInvoiceNo();
+  }, [selectedFirm?._id]);
 
   const [items, setItems] = useState([
     {
@@ -35,6 +65,7 @@ const InvoiceForm = () => {
       purity: "22K",
       rate: "",
       mkgCharg: "",
+      hallmark: "",
       total: "",
     },
   ]);
@@ -62,6 +93,7 @@ const InvoiceForm = () => {
         purity: "22K",
         rate: "",
         mkgCharg: "",
+        hallmark: "",
         total: "",
       },
     ]);
@@ -82,14 +114,19 @@ const InvoiceForm = () => {
         const lessWt = parseFloat(updatedItem.lessWt) || 0;
         const rate = parseFloat(updatedItem.rate) || 0;
         const mkgCharg = parseFloat(updatedItem.mkgCharg) || 0;
+        const hallmark = parseFloat(updatedItem.hallmark) || 0;
 
         const ntWt = gsWt - lessWt;
         updatedItem.ntWt = ntWt.toFixed(3);
 
-        const basicAmt = ntWt * rate;
+        // Standard Indian Gold Invoice convention (Rate is per 10 grams)
+        // Silver is usually per gram or per kg, keeping it per-gram for safety unless it's gold.
+        const basicAmt = (selectedCategory?.toLowerCase() === "gold") ? (ntWt * rate) / 10 : (ntWt * rate);
         const totalMkg = ntWt * mkgCharg;
-        const lineTotal = basicAmt + totalMkg;
+        const lineTotal = basicAmt + totalMkg + hallmark;
 
+        updatedItem.basicAmt = basicAmt.toFixed(2);
+        updatedItem.totalMkg = totalMkg.toFixed(2);
         updatedItem.total = lineTotal.toFixed(2);
         return updatedItem;
       }
@@ -113,6 +150,26 @@ const InvoiceForm = () => {
       balance: (Math.round(grandTotal) - (parseFloat(prev.received) || 0)).toFixed(2)
     }));
   }, [items, totals.received]);
+
+  const handleEnterNavigation = (e) => {
+    if (e.key === "Enter") {
+      // Avoid submitting if we're not on the final "Save & Print" button
+      const target = e.target;
+      if (target.tagName === "BUTTON" && target.type === "submit") return;
+      if (target.tagName === "TEXTAREA") return; // Allow newlines in textareas if any
+
+      e.preventDefault();
+      const form = e.currentTarget;
+      const focusableElements = Array.from(form.querySelectorAll('input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button[type="submit"]'));
+      const index = focusableElements.indexOf(target);
+
+      if (index > -1 && index < focusableElements.length - 1) {
+        focusableElements[index + 1].focus();
+      } else if (index === focusableElements.length - 1) {
+        // Optionally submit or do nothing
+      }
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -149,6 +206,9 @@ const InvoiceForm = () => {
         purity: item.purity,
         rate: parseFloat(item.rate) || 0,
         makingCharges: parseFloat(item.mkgCharg) || 0,
+        hallmarkCharges: parseFloat(item.hallmark) || 0,
+        basicAmt: parseFloat(item.basicAmt) || 0,
+        finalMkg: parseFloat(item.finalMkg) || 0,
         total: parseFloat(item.total) || 0,
       })),
       subTotal: parseFloat(totals.taxableAmt),
@@ -158,27 +218,22 @@ const InvoiceForm = () => {
     };
 
     const token = localStorage.getItem("token");
-    const loadId = toast.loading("Processing transaction...");
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/invoices`, {
+      const res = await apiFetch(`${import.meta.env.VITE_API_BASE_URL}/api/invoices`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify(invoiceData),
       });
-      const data = await res.json();
-      if (res.ok) {
-        toast.update(loadId, { render: "Invoice saved successfully", type: "success", isLoading: false, autoClose: 2000 });
+      if (res && res.ok) {
+        const data = await res.json();
         localStorage.setItem("generatedInvoice", JSON.stringify(data));
         navigate("/preview");
       } else {
-        toast.update(loadId, { render: data.message || "Commit failed", type: "error", isLoading: false, autoClose: 3000 });
+        const errorData = await res.json().catch(() => ({ message: "Commit failed" }));
+        toast.error(errorData.message || "Commit failed");
       }
     } catch (err) {
-      toast.update(loadId, { render: "Network error", type: "error", isLoading: false, autoClose: 3000 });
+      toast.error("Network error: " + err.message);
     }
   };
 
@@ -194,6 +249,13 @@ const InvoiceForm = () => {
             <h1 className="text-3xl font-bold text-theme-primary tracking-tight">Invoice <span className="text-theme-teal">Builder</span></h1>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate("/history", { state: { initialFirmId: selectedFirm._id, from: "builder" } })}
+              className="p-3 rounded-xl bg-theme-teal/10 hover:bg-theme-teal text-theme-teal hover:text-white transition-all border border-theme-teal/20"
+              title="Firm History"
+            >
+              <Clock className="w-5 h-5" />
+            </button>
             <ThemeToggle />
             <div className="text-right">
               <p className="text-[10px] text-theme-muted uppercase font-bold tracking-widest">{selectedFirm.name}</p>
@@ -206,7 +268,7 @@ const InvoiceForm = () => {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} onKeyDown={handleEnterNavigation} className="space-y-8">
           {/* Client Details */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 card-modern space-y-6 animate-fade-in delay-100">
@@ -291,6 +353,7 @@ const InvoiceForm = () => {
                     <th className="px-3 py-4 w-20">Purity</th>
                     <th className="px-3 py-4 text-right w-32">Rate</th>
                     <th className="px-3 py-4 text-right w-24">Mkg.</th>
+                    <th className="px-3 py-4 text-right w-24">Hallmark</th>
                     <th className="px-4 py-4 text-right w-32">Total</th>
                     <th className="px-4 py-4 w-12"></th>
                   </tr>
@@ -316,6 +379,9 @@ const InvoiceForm = () => {
                       </td>
                       <td className="px-3 py-4 text-right">
                         <input type="number" className="bg-transparent border-none outline-none w-full text-right focus:text-teal-400" placeholder="0" value={item.mkgCharg} onChange={e => handleItemChange(item.id, 'mkgCharg', e.target.value)} />
+                      </td>
+                      <td className="px-3 py-4 text-right">
+                        <input type="number" className="bg-transparent border-none outline-none w-full text-right focus:text-teal-400 font-mono" placeholder="0" value={item.hallmark} onChange={e => handleItemChange(item.id, 'hallmark', e.target.value)} />
                       </td>
                       <td className="px-4 py-4 text-right font-bold text-theme-primary">₹{(parseFloat(item.total) || 0).toLocaleString()}</td>
                       <td className="px-4 py-4 text-center">
