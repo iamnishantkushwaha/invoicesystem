@@ -5,15 +5,53 @@
   --card-bg: rgba(255, 255, 255, 0.03);
   --teal-primary: #0d9488;
   --teal-light: #14b8a6;
+  --teal-accent: #2dd4bf;
   --glass-border: rgba(255, 255, 255, 0.1);
+  --text-primary: #ffffff;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --card-hover-bg: rgba(255, 255, 255, 0.08);
+}
+
+.light {
+  --bg-deep: #f8fafc;
+  --card-bg: #ffffff;
+  --teal-primary: #0d9488;
+  --teal-light: #0f766e;
+  --teal-accent: #0f766e;
+  --glass-border: rgba(0, 0, 0, 0.1);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --input-bg: #f1f5f9;
+  --card-hover-bg: #f8fafc;
 }
 
 body {
   margin: 0;
   padding: 0;
   background-color: var(--bg-deep);
+  color: var(--text-primary);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.text-theme-primary {
+  color: var(--text-primary);
+}
+
+.text-theme-secondary {
+  color: var(--text-secondary);
+}
+
+.text-theme-muted {
+  color: var(--text-muted);
+}
+
+.text-theme-teal {
+  color: var(--teal-accent);
 }
 
 /* Hide Spinners in numeric inputs */
@@ -32,6 +70,7 @@ input[type=number] {
 .page-container {
   min-height: 100vh;
   padding: 1.5rem;
+  background-color: var(--bg-deep);
 }
 
 @media (min-width: 768px) {
@@ -47,19 +86,24 @@ input[type=number] {
 }
 
 .card-modern {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--card-bg);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
   border-radius: 1rem;
   padding: 1.5rem;
   transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--text-primary);
 }
 
 .card-modern:hover {
   border-color: rgba(20, 184, 166, 0.5);
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: var(--card-hover-bg);
   transform: translateY(-0.25rem);
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.1);
+}
+
+.light .card-modern:hover {
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.05);
 }
 
 /* Glass Inner Glow */
@@ -87,19 +131,20 @@ input[type=number] {
 
 .input-field {
   width: 100%;
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: var(--input-bg);
+  border: 1px solid var(--glass-border);
   border-radius: 0.75rem;
   padding: 0.75rem 1rem;
   outline: none;
   font-size: 0.875rem;
   line-height: 1.25rem;
+  color: var(--text-primary);
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .input-field:focus {
-  border-color: rgba(20, 184, 166, 0.5);
-  background-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--teal-primary);
+  background-color: var(--card-hover-bg);
   box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.1);
 }
 
@@ -128,11 +173,11 @@ input[type=number] {
 }
 
 .btn-secondary {
-  background-color: rgba(255, 255, 255, 0.05);
-  color: white;
+  background-color: var(--input-bg);
+  color: var(--text-primary);
   font-weight: 700;
   padding: 0.75rem 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
   border-radius: 0.75rem;
   display: flex;
   align-items: center;
@@ -142,7 +187,7 @@ input[type=number] {
 }
 
 .btn-secondary:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--card-hover-bg);
 }
 
 .btn-secondary:active {
@@ -156,22 +201,32 @@ input[type=number] {
   color: transparent;
 }
 
+.light .text-teal-gradient {
+  background: linear-gradient(to right, #0d9488, #10b981);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-deep);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--glass-border);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
 }
 
 /* Print Overrides */
@@ -183,14 +238,18 @@ input[type=number] {
 
 /* Custom Toastify Theme */
 .Toastify__toast {
-  background: rgba(18, 18, 18, 0.8) !important;
+  background: var(--card-bg) !important;
   backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid var(--glass-border) !important;
   border-radius: 1rem !important;
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5) !important;
-  color: #fff !important;
+  color: var(--text-primary) !important;
   font-family: 'Inter', sans-serif !important;
   font-weight: 500 !important;
+}
+
+.light .Toastify__toast {
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1) !important;
 }
 
 .Toastify__toast--success {
@@ -214,12 +273,12 @@ input[type=number] {
 }
 
 .Toastify__close-button {
-  color: #888 !important;
+  color: var(--text-secondary) !important;
   opacity: 0.7;
 }
 
 .Toastify__close-button:hover {
-  color: #fff !important;
+  color: var(--text-primary) !important;
   opacity: 1;
 }
 

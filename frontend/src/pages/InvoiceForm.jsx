@@ -3,6 +3,7 @@ import "../animations.css";
 import { useNavigate } from "react-router-dom";
 import { Plus, Trash2, Save, Printer, ArrowLeft, User, MapPin, Phone, Hash, Calendar, Tags } from "lucide-react";
 import { toast } from "react-toastify";
+import ThemeToggle from "../components/ThemeToggle";
 
 const InvoiceForm = () => {
   const navigate = useNavigate();
@@ -187,18 +188,21 @@ const InvoiceForm = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/5">
           <div className="space-y-1">
-            <button onClick={() => navigate("/type")} className="text-gray-500 hover:text-teal-400 text-xs font-bold uppercase mb-2 flex items-center gap-2">
+            <button onClick={() => navigate("/type")} className="text-theme-muted hover:text-theme-teal text-xs font-bold uppercase mb-2 flex items-center gap-2">
               <ArrowLeft className="w-3 h-3" /> Back
             </button>
-            <h1 className="text-3xl font-bold text-white tracking-tight">Invoice <span className="text-teal-400">Builder</span></h1>
+            <h1 className="text-3xl font-bold text-theme-primary tracking-tight">Invoice <span className="text-theme-teal">Builder</span></h1>
           </div>
-          <div className="text-right">
-            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">{selectedFirm.name}</p>
-            <input
-              className="bg-transparent border-none text-right text-xs text-teal-500 font-mono focus:outline-none focus:ring-1 focus:ring-teal-500/30 rounded px-1 w-32"
-              value={invoiceMeta.invoiceNo}
-              onChange={e => setInvoiceMeta({ ...invoiceMeta, invoiceNo: e.target.value })}
-            />
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <div className="text-right">
+              <p className="text-[10px] text-theme-muted uppercase font-bold tracking-widest">{selectedFirm.name}</p>
+              <input
+                className="bg-transparent border-none text-right text-xs text-theme-teal font-mono focus:outline-none focus:ring-1 focus:ring-teal-500/30 rounded px-1 w-32"
+                value={invoiceMeta.invoiceNo}
+                onChange={e => setInvoiceMeta({ ...invoiceMeta, invoiceNo: e.target.value })}
+              />
+            </div>
           </div>
         </div>
 
@@ -206,19 +210,19 @@ const InvoiceForm = () => {
           {/* Client Details */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 card-modern space-y-6 animate-fade-in delay-100">
-              <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400">
+              <h3 className="text-sm font-bold text-theme-secondary uppercase tracking-wider flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center text-theme-teal">
                   <User className="w-4 h-4" />
                 </div>
                 Client Details
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <span className="text-[10px] text-gray-500 ml-1 font-bold flex items-center gap-1"><User className="w-3 h-3" /> CLIENT NAME</span>
+                  <span className="text-[10px] text-theme-muted ml-1 font-bold flex items-center gap-1"><User className="w-3 h-3" /> CLIENT NAME</span>
                   <input className="input-field" placeholder="Full Name" value={receiver.name} onChange={e => setReceiver({ ...receiver, name: e.target.value })} />
                 </div>
                 <div className="space-y-1">
-                  <span className="text-[10px] text-gray-500 ml-1 font-bold flex items-center gap-1"><Phone className="w-3 h-3" /> PHONE NO.</span>
+                  <span className="text-[10px] text-theme-muted ml-1 font-bold flex items-center gap-1"><Phone className="w-3 h-3" /> PHONE NO.</span>
                   <input
                     className="input-field"
                     placeholder="Enter 10 Digit Phone"
@@ -231,15 +235,15 @@ const InvoiceForm = () => {
                   />
                 </div>
                 <div className="space-y-1 md:col-span-2">
-                  <span className="text-[10px] text-gray-500 ml-1 font-bold flex items-center gap-1"><MapPin className="w-3 h-3" /> ADDRESS</span>
+                  <span className="text-[10px] text-theme-muted ml-1 font-bold flex items-center gap-1"><MapPin className="w-3 h-3" /> ADDRESS</span>
                   <input className="input-field" placeholder="Complete address..." value={receiver.address} onChange={e => setReceiver({ ...receiver, address: e.target.value })} />
                 </div>
               </div>
             </div>
 
             <div className="card-modern space-y-6 animate-fade-in delay-200">
-              <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400">
+              <h3 className="text-sm font-bold text-theme-secondary uppercase tracking-wider flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center text-theme-teal">
                   <Calendar className="w-4 h-4" />
                 </div>
                 Metadata
@@ -313,7 +317,7 @@ const InvoiceForm = () => {
                       <td className="px-3 py-4 text-right">
                         <input type="number" className="bg-transparent border-none outline-none w-full text-right focus:text-teal-400" placeholder="0" value={item.mkgCharg} onChange={e => handleItemChange(item.id, 'mkgCharg', e.target.value)} />
                       </td>
-                      <td className="px-4 py-4 text-right font-bold text-white">₹{(parseFloat(item.total) || 0).toLocaleString()}</td>
+                      <td className="px-4 py-4 text-right font-bold text-theme-primary">₹{(parseFloat(item.total) || 0).toLocaleString()}</td>
                       <td className="px-4 py-4 text-center">
                         <button type="button" onClick={() => handleRemoveItem(item.id)} className="text-gray-600 hover:text-red-500 transition-colors">
                           <Trash2 className="w-5 h-5" />
@@ -352,12 +356,12 @@ const InvoiceForm = () => {
             </div>
 
             <div className="w-full md:w-80 space-y-3">
-              <div className="flex justify-between text-xs text-gray-400 px-1"><span>Taxable Value</span> <span className="text-white font-mono">₹{(parseFloat(totals.taxableAmt) || 0).toLocaleString()}</span></div>
-              <div className="flex justify-between text-xs text-gray-500 px-1"><span>GST (3%)</span> <span className="text-white/80 font-mono">₹{((parseFloat(totals.cgst) || 0) + (parseFloat(totals.sgst) || 0)).toLocaleString()}</span></div>
+              <div className="flex justify-between text-xs text-theme-muted px-1"><span>Taxable Value</span> <span className="text-theme-primary font-mono">₹{(parseFloat(totals.taxableAmt) || 0).toLocaleString()}</span></div>
+              <div className="flex justify-between text-xs text-theme-muted px-1"><span>GST (3%)</span> <span className="text-theme-secondary font-mono">₹{((parseFloat(totals.cgst) || 0) + (parseFloat(totals.sgst) || 0)).toLocaleString()}</span></div>
               <div className="h-px bg-white/10 my-2"></div>
               <div className="flex justify-between items-center bg-teal-500/10 p-4 rounded-xl border border-teal-500/20">
-                <span className="text-sm font-bold text-white uppercase tracking-tight">Net Amount</span>
-                <span className="text-2xl font-bold text-white font-mono">₹{(parseFloat(totals.grandTotal) || 0).toLocaleString()}</span>
+                <span className="text-sm font-bold text-theme-primary uppercase tracking-tight">Net Amount</span>
+                <span className="text-2xl font-bold text-theme-primary font-mono">₹{(parseFloat(totals.grandTotal) || 0).toLocaleString()}</span>
               </div>
               <button type="submit" className="w-full btn-primary !rounded-xl !py-4 shadow-xl mt-4">
                 <Printer className="w-5 h-5" /> Save & Print

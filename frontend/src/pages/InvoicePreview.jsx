@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Printer, ArrowLeft } from "lucide-react";
+import ThemeToggle from "../components/ThemeToggle";
 
 const InvoicePreview = () => {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ const InvoicePreview = () => {
 
   if (!data) {
     return (
-      <div className="p-10 text-white">
+      <div className="p-10 text-theme-primary">
         Loading invoice data...
       </div>
     );
@@ -75,17 +76,20 @@ const InvoicePreview = () => {
       <div className="content-max-width mb-6 flex flex-col md:flex-row md:items-center justify-between gap-6 no-print">
         <button
           onClick={() => navigate("/invoice-form")}
-          className="flex items-center gap-2 text-gray-400 hover:text-teal-400 transition-all font-bold text-sm"
+          className="flex items-center gap-2 text-theme-muted hover:text-theme-teal transition-all font-bold text-sm"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Editor
         </button>
-        <div className="flex gap-4">
-          <button
-            onClick={handlePrint}
-            className="btn-primary !py-2 !px-8 text-xs uppercase tracking-widest"
-          >
-            <Printer className="w-4 h-4" /> Print
-          </button>
+        <div className="flex gap-4 items-center">
+          <ThemeToggle />
+          <div className="flex gap-4">
+            <button
+              onClick={handlePrint}
+              className="btn-primary !py-2 !px-8 text-xs uppercase tracking-widest"
+            >
+              <Printer className="w-4 h-4" /> Print
+            </button>
+          </div>
         </div>
       </div>
 

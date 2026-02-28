@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Coins, Layers, ArrowLeft, LogOut } from 'lucide-react';
 import { toast } from 'react-toastify';
+import ThemeToggle from '../components/ThemeToggle';
 
 
 const CategorySelect = () => {
@@ -39,31 +40,34 @@ const CategorySelect = () => {
                 <div className="flex justify-between items-center mb-12">
                     <button
                         onClick={() => navigate('/dashboard')}
-                        className="flex items-center gap-2 text-gray-400 hover:text-teal-400 transition-all font-bold text-sm"
+                        className="flex items-center gap-2 text-theme-muted hover:text-theme-teal transition-all font-bold text-sm"
                     >
                         <ArrowLeft className="w-4 h-4" /> Back to Units
                     </button>
-                    <button
-                        onClick={() => {
-                            localStorage.clear();
-                            navigate('/');
-                            toast.info('Logged out successfully');
-                        }}
-                        className="p-2 rounded-lg bg-white/5 hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-all border border-white/10"
-                        title="Logout"
-                    >
-                        <LogOut className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <ThemeToggle />
+                        <button
+                            onClick={() => {
+                                localStorage.clear();
+                                navigate('/');
+                                toast.info('Logged out successfully');
+                            }}
+                            className="p-2 rounded-lg bg-white/5 hover:bg-red-500/10 text-theme-muted hover:text-red-500 transition-all border border-white/10"
+                            title="Logout"
+                        >
+                            <LogOut className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
 
                 <div className="text-center mb-16">
-                    <p className="text-teal-500 font-bold tracking-widest text-[10px] uppercase mb-4">
+                    <p className="text-theme-teal font-bold tracking-widest text-[10px] uppercase mb-4">
                         Current Firm: {selectedFirm.name}
                     </p>
-                    <h1 className="text-4xl font-bold text-white mb-4">
-                        Asset <span className="text-teal-400">Category</span>
+                    <h1 className="text-4xl font-bold text-theme-primary mb-4">
+                        Asset <span className="text-theme-teal">Category</span>
                     </h1>
-                    <p className="text-gray-400 text-sm max-w-md mx-auto">
+                    <p className="text-theme-secondary text-sm max-w-md mx-auto">
                         Select the primary classification for this transaction record.
                     </p>
                 </div>
@@ -79,10 +83,10 @@ const CategorySelect = () => {
                             <div className="w-16 h-16 rounded-2xl bg-teal-500/10 flex items-center justify-center mb-6 text-teal-400 group-hover:bg-teal-500 group-hover:text-white transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
                                 {cat.icon}
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2 group-hover:text-teal-400 transition-all uppercase">
+                            <h3 className="text-xl font-bold text-theme-primary mb-2 group-hover:text-theme-teal transition-all uppercase">
                                 {cat.title}
                             </h3>
-                            <p className="text-gray-500 text-xs">
+                            <p className="text-theme-secondary text-xs">
                                 {cat.description}
                             </p>
                         </button>

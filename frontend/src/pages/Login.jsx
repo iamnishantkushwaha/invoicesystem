@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogIn, ShieldCheck } from "lucide-react";
 import { toast } from "react-toastify";
+import ThemeToggle from "../components/ThemeToggle";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -64,17 +65,18 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
+    <div className="min-h-screen flex items-center justify-center p-6 relative">
+      <ThemeToggle className="absolute top-6 right-6" />
       <div className="w-full max-w-md card-modern p-10! space-y-8 animate-in fade-in zoom-in duration-500">
         <div className="text-center space-y-4">
-          <div className="w-16 h-16 bg-teal-500/10 rounded-2xl flex items-center justify-center mx-auto border border-teal-500/20">
-            <ShieldCheck className="w-8 h-8 text-teal-400" />
+          <div className="w-16 h-16 bg-teal-500/10 rounded-2xl flex items-center justify-center mx-auto border border-teal-500/20 shadow-sm">
+            <ShieldCheck className="w-8 h-8 text-theme-teal" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">
-              System <span className="text-teal-400">Login</span>
+            <h1 className="text-3xl font-bold text-theme-primary tracking-tight">
+              System <span className="text-theme-teal">Login</span>
             </h1>
-            <p className="text-gray-500 text-sm mt-1">
+            <p className="text-theme-secondary text-sm mt-1">
               Access your invoicing dashboard
             </p>
           </div>
@@ -82,7 +84,7 @@ const Login = () => {
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-2">
-            <label className="text-[10px] font-bold text-gray-500 ml-1 uppercase tracking-widest">
+            <label className="text-[10px] font-bold text-theme-muted ml-1 uppercase tracking-widest">
               Email Address
             </label>
             <input
@@ -93,7 +95,7 @@ const Login = () => {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-bold text-gray-500 ml-1 uppercase tracking-widest">
+            <label className="text-[10px] font-bold text-theme-muted ml-1 uppercase tracking-widest">
               Security Pin
             </label>
             <input
@@ -108,7 +110,7 @@ const Login = () => {
           </button>
         </form>
 
-        <p className="text-center text-[10px] text-gray-600 font-bold uppercase tracking-[0.2em] opacity-50">
+        <p className="text-center text-[10px] text-theme-muted font-bold uppercase tracking-[0.2em] opacity-80">
           AARAMBH JEWELS SYSTEM v1.0
         </p>
       </div>
