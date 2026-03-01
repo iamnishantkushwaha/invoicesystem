@@ -172,6 +172,16 @@ exports.deleteInvoice = async (req, res) => {
       });
     }
 
+    // Delete from Cloudinary if exists
+    if (invoice.cloudinaryPublicId) {
+      try {
+        await cloudinary.uploader.destroy(invoice.cloudinaryPublicId);
+        console.log("Cloudinary asset deleted:", invoice.cloudinaryPublicId);
+      } catch (cloudinaryError) {
+        console.error("Failed to delete Cloudinary asset:", cloudinaryError);
+      }
+    }
+
     res.json({
       message: "Invoice deleted successfully",
     });
@@ -245,8 +255,8 @@ exports.uploadInvoicePDF = async (req, res) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
           folder: "invoices",
-          resource_type: "auto", // Let Cloudinary detect the type
-          public_id: `invoice_${Date.now()}`
+          resource_type: "raw", // Fixed: Use raw for PDF to avoid "image" corruption
+          public_id: `invoice_${Date.now()}.pdf`
         },
         (error, result) => {
           if (error) {

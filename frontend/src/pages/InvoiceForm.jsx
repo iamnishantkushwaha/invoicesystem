@@ -227,7 +227,7 @@ const InvoiceForm = () => {
       if (res && res.ok) {
         const data = await res.json();
         localStorage.setItem("generatedInvoice", JSON.stringify(data));
-        navigate("/preview");
+        navigate("/preview", { state: { from: "builder" } });
       } else {
         const errorData = await res.json().catch(() => ({ message: "Commit failed" }));
         toast.error(errorData.message || "Commit failed");

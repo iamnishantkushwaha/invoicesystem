@@ -124,7 +124,12 @@ const InvoiceHistory = () => {
 
     const handleView = (invoice) => {
         localStorage.setItem("generatedInvoice", JSON.stringify(invoice));
-        navigate("/preview");
+        navigate("/preview", {
+            state: {
+                from: "history",
+                originalState: location.state // Preserve where History came from
+            }
+        });
     };
 
     const handleDelete = async (id) => {
@@ -303,8 +308,8 @@ const InvoiceHistory = () => {
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <span className={`text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider ${inv.invoiceTypeId?.name?.toLowerCase().includes('cash')
-                                                        ? 'bg-green-500/10 text-green-500 border border-green-500/20'
-                                                        : 'bg-theme-teal/10 text-theme-teal border border-theme-teal/20'
+                                                    ? 'bg-green-500/10 text-green-500 border border-green-500/20'
+                                                    : 'bg-theme-teal/10 text-theme-teal border border-theme-teal/20'
                                                     }`}>
                                                     {inv.invoiceTypeId?.name || "N/A"}
                                                 </span>

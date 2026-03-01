@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Printer, ArrowLeft, Eye, CloudUpload } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -9,6 +9,7 @@ import { apiFetch } from "../utils/api";
 
 const InvoicePreview = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const printRef = useRef(null);
   const [data, setData] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("idle"); // idle, uploading, success, error
@@ -70,13 +71,17 @@ const InvoicePreview = () => {
 
   const handlePrint = () => {
     window.print();
-    toast.info("Returning to Builder...", {
+    const targetPath = location.state?.from === "history" ? "/history" : "/invoice-form";
+    const targetLabel = location.state?.from === "history" ? "History" : "Builder";
+    const targetState = location.state?.from === "history" ? location.state?.originalState : null;
+
+    toast.info(`Returning to ${targetLabel}...`, {
       autoClose: 1500,
       position: "top-center",
       theme: "colored"
     });
     setTimeout(() => {
-      navigate("/invoice-form");
+      navigate(targetPath, { state: targetState, replace: true });
     }, 1500);
   };
 
@@ -128,12 +133,13 @@ const InvoicePreview = () => {
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
       const pdfBlob = pdf.output("blob");
-      const pdfFile = new File([pdfBlob], `invoice_${invoiceNo}.pdf`, { type: "application/pdf" });
+      const sanitizedNo = invoiceNo.replace(/\//g, "-");
+      const filename = `invoice_${sanitizedNo}.pdf`;
 
       // We'll use a signed upload approach or proxy through our backend if needed.
       // For simplicity and security, we'll send it to our backend which handles Cloudinary.
       const formData = new FormData();
-      formData.append("file", pdfFile);
+      formData.append("file", pdfBlob, filename);
 
       const token = localStorage.getItem("token"); // Still needed for console log or other logic
       console.log("Preparing to fetch:", `${import.meta.env.VITE_API_BASE_URL}/api/invoices/${data._id}/upload`);
@@ -179,10 +185,14 @@ const InvoicePreview = () => {
     <div className="page-container no-print-bg">
       <div className="content-max-width mb-6 flex flex-col md:flex-row md:items-center justify-between gap-6 no-print">
         <button
-          onClick={() => navigate("/invoice-form")}
+          onClick={() => {
+            const targetPath = location.state?.from === "history" ? "/history" : "/invoice-form";
+            const targetState = location.state?.from === "history" ? location.state?.originalState : null;
+            navigate(targetPath, { state: targetState, replace: true });
+          }}
           className="flex items-center gap-2 text-theme-muted hover:text-theme-teal transition-all font-bold text-sm"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Editor
+          <ArrowLeft className="w-4 h-4" /> Back to {location.state?.from === "history" ? "History" : "Editor"}
         </button>
         <div className="flex gap-4 items-center">
           <ThemeToggle />
