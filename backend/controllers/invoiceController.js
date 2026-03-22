@@ -9,7 +9,7 @@ const { cloudinary } = require("../utils/cloudinary");
 exports.getLastInvoiceNumber = async (req, res) => {
   try {
     const lastInvoice = await Invoice.findOne({
-      userId: req.user._id
+      userId: req.user._id,
     }).sort({ createdAt: -1 });
 
     if (!lastInvoice) {
@@ -71,7 +71,8 @@ exports.createInvoice = async (req, res) => {
   } catch (error) {
     if (error.code === 11000) {
       return res.status(400).json({
-        message: "Invoice number already exists for this firm. Please use a different number.",
+        message:
+          "Invoice number already exists for this firm. Please use a different number.",
       });
     }
     res.status(500).json({
@@ -110,7 +111,9 @@ exports.getSingleInvoice = async (req, res) => {
     const invoice = await Invoice.findOne({
       _id: req.params.id,
       userId: req.user._id,
-    }).populate("firmId").populate("invoiceTypeId");
+    })
+      .populate("firmId")
+      .populate("invoiceTypeId");
 
     if (!invoice) {
       return res.status(404).json({
@@ -141,6 +144,49 @@ exports.updateInvoice = async (req, res) => {
       return res.status(404).json({
         message: "Invoice not found",
       });
+    }
+
+    // Restrict editing to within 1 day of creation
+    const now = new Date();
+    const createdAt = new Date(invoice.createdAt);
+    const diffMs = now - createdAt;
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    if (diffMs > oneDayMs) {
+      return res.status(403).json({
+        message: "Editing is only allowed within 1 day of invoice creation.",
+      });
+    }
+
+    // If invoice has a Cloudinary file and file is being updated, handle Cloudinary update
+    if (invoice.cloudinaryPublicId && req.body.cloudinaryFile) {
+      // Remove old file from Cloudinary
+      try {
+        await cloudinary.uploader.destroy(invoice.cloudinaryPublicId);
+      } catch (cloudinaryError) {
+        console.error(
+          "Failed to delete old Cloudinary asset:",
+          cloudinaryError,
+        );
+      }
+      // Upload new file to Cloudinary
+      try {
+        const result = await cloudinary.uploader.upload(
+          req.body.cloudinaryFile,
+          {
+            folder: "invoices",
+            resource_type: "raw",
+          },
+        );
+        invoice.cloudinaryUrl = result.secure_url;
+        invoice.cloudinaryPublicId = result.public_id;
+      } catch (cloudinaryError) {
+        return res
+          .status(500)
+          .json({
+            message: "Cloudinary upload failed",
+            error: cloudinaryError.message,
+          });
+      }
     }
 
     Object.assign(invoice, req.body);
@@ -204,11 +250,11 @@ exports.getInvoiceStats = async (req, res) => {
         $group: {
           _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
           count: { $sum: 1 },
-          totalAmount: { $sum: "$grandTotal" }
-        }
+          totalAmount: { $sum: "$grandTotal" },
+        },
       },
       { $sort: { _id: -1 } },
-      { $limit: 7 }
+      { $limit: 7 },
     ]);
     res.json(stats);
   } catch (error) {
@@ -226,7 +272,7 @@ exports.updateCloudinaryUrl = async (req, res) => {
     const invoice = await Invoice.findOneAndUpdate(
       { _id: req.params.id, userId: req.user._id },
       { cloudinaryUrl, cloudinaryPublicId },
-      { new: true }
+      { new: true },
     );
     if (!invoice) return res.status(404).json({ message: "Invoice not found" });
     res.json(invoice);
@@ -246,7 +292,9 @@ exports.uploadInvoicePDF = async (req, res) => {
       return res.status(400).json({ message: "No file uploaded" });
     }
 
-    console.log(`Received file for upload: ${req.file.originalname}, size: ${req.file.size} bytes`);
+    console.log(
+      `Received file for upload: ${req.file.originalname}, size: ${req.file.size} bytes`,
+    );
 
     console.log(`Streaming ${req.file.buffer.length} bytes to Cloudinary...`);
 
@@ -256,7 +304,7 @@ exports.uploadInvoicePDF = async (req, res) => {
         {
           folder: "invoices",
           resource_type: "raw", // Fixed: Use raw for PDF to avoid "image" corruption
-          public_id: `invoice_${Date.now()}.pdf`
+          public_id: `invoice_${Date.now()}.pdf`,
         },
         (error, result) => {
           if (error) {
@@ -265,7 +313,7 @@ exports.uploadInvoicePDF = async (req, res) => {
           } else {
             resolve(result);
           }
-        }
+        },
       );
       uploadStream.end(req.file.buffer);
     });
@@ -273,19 +321,32 @@ exports.uploadInvoicePDF = async (req, res) => {
     console.log("File manual-uploaded to Cloudinary. URL:", result.secure_url);
     const { secure_url: cloudinaryUrl, public_id: cloudinaryPublicId } = result;
 
-    console.log("Updating database for invoice ID:", req.params.id, "and user ID:", req.user._id);
+    console.log(
+      "Updating database for invoice ID:",
+      req.params.id,
+      "and user ID:",
+      req.user._id,
+    );
     const invoice = await Invoice.findOneAndUpdate(
       { _id: req.params.id, userId: req.user._id },
       { cloudinaryUrl, cloudinaryPublicId },
-      { new: true }
+      { new: true },
     );
 
     if (!invoice) {
-      console.error("Invoice not found or unauthorized for update. ID:", req.params.id);
-      return res.status(404).json({ message: "Invoice not found or unauthorized" });
+      console.error(
+        "Invoice not found or unauthorized for update. ID:",
+        req.params.id,
+      );
+      return res
+        .status(404)
+        .json({ message: "Invoice not found or unauthorized" });
     }
 
-    console.log("Database updated successfully for invoice:", invoice.invoiceNumber);
+    console.log(
+      "Database updated successfully for invoice:",
+      invoice.invoiceNumber,
+    );
     res.json(invoice);
   } catch (error) {
     res.status(500).json({
@@ -300,7 +361,10 @@ exports.uploadInvoicePDF = async (req, res) => {
 // ===============================
 exports.redirectCloudinary = async (req, res) => {
   try {
-    const invoice = await Invoice.findOne({ _id: req.params.id, userId: req.user._id });
+    const invoice = await Invoice.findOne({
+      _id: req.params.id,
+      userId: req.user._id,
+    });
     if (!invoice || !invoice.cloudinaryUrl) {
       return res.status(404).send("PDF not found or not uploaded yet.");
     }
