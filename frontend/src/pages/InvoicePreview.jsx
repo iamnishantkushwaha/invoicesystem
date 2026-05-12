@@ -299,26 +299,6 @@ const InvoicePreview = () => {
         <div className="flex gap-4 items-center">
           <ThemeToggle />
           <div className="flex gap-4">
-            {/* Edit button only if within 1 day of creation */}
-            {(() => {
-              const createdAt = new Date(data.createdAt);
-              const now = new Date();
-              const diffMs = now - createdAt;
-              const oneDayMs = 24 * 60 * 60 * 1000;
-              if (diffMs <= oneDayMs) {
-                return (
-                  <button
-                    onClick={() =>
-                      navigate("/invoice-edit", { state: { invoice: data } })
-                    }
-                    className="btn-primary !py-2 !px-8 text-xs uppercase tracking-widest bg-yellow-400/10 text-yellow-600 hover:bg-yellow-400 hover:text-white"
-                  >
-                    Edit
-                  </button>
-                );
-              }
-              return null;
-            })()}
             <button
               onClick={handlePrint}
               className="btn-primary !py-2 !px-8 text-xs uppercase tracking-widest"

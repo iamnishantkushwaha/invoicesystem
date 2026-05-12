@@ -1,7 +1,20 @@
 import { useState, useEffect } from "react";
 import "../animations.css";
 import { useNavigate } from "react-router-dom";
-import { Plus, Trash2, Save, Printer, ArrowLeft, User, MapPin, Phone, Hash, Calendar, Tags, Clock } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Save,
+  Printer,
+  ArrowLeft,
+  User,
+  MapPin,
+  Phone,
+  Hash,
+  Calendar,
+  Tags,
+  Clock,
+} from "lucide-react";
 import { toast } from "react-toastify";
 import ThemeToggle from "../components/ThemeToggle";
 import { apiFetch } from "../utils/api";
@@ -21,7 +34,7 @@ const InvoiceForm = () => {
 
   const [invoiceMeta, setInvoiceMeta] = useState({
     invoiceNo: "IS/...",
-    date: new Date().toLocaleDateString('en-CA'), // Robust YYYY-MM-DD in local time
+    date: new Date().toLocaleDateString("en-CA"), // Robust YYYY-MM-DD in local time
   });
 
   useEffect(() => {
@@ -29,7 +42,9 @@ const InvoiceForm = () => {
       if (!selectedFirm?._id) return;
 
       try {
-        const res = await apiFetch(`${import.meta.env.VITE_API_BASE_URL}/api/invoices/last-number`);
+        const res = await apiFetch(
+          `${import.meta.env.VITE_API_BASE_URL}/api/invoices/last-number`,
+        );
         if (res.ok) {
           const { lastNumber } = await res.json();
 
@@ -40,10 +55,13 @@ const InvoiceForm = () => {
           if (match) {
             const prefix = match[1] || "IS/";
             const num = parseInt(match[2]) || 0;
-            setInvoiceMeta(prev => ({ ...prev, invoiceNo: `${prefix}${num + 1}` }));
+            setInvoiceMeta((prev) => ({
+              ...prev,
+              invoiceNo: `${prefix}${num + 1}`,
+            }));
           } else {
             // Fallback for non-standard formats
-            setInvoiceMeta(prev => ({ ...prev, invoiceNo: "IS/1" }));
+            setInvoiceMeta((prev) => ({ ...prev, invoiceNo: "IS/1" }));
           }
         }
       } catch (err) {
@@ -121,7 +139,10 @@ const InvoiceForm = () => {
 
         // Standard Indian Gold Invoice convention (Rate is per 10 grams)
         // Silver is usually per gram or per kg, keeping it per-gram for safety unless it's gold.
-        const basicAmt = (selectedCategory?.toLowerCase() === "gold") ? (ntWt * rate) / 10 : (ntWt * rate);
+        const basicAmt =
+          selectedCategory?.toLowerCase() === "gold"
+            ? (ntWt * rate) / 10
+            : ntWt * rate;
         const totalMkg = ntWt * mkgCharg;
         const lineTotal = basicAmt + totalMkg + hallmark;
 
@@ -136,18 +157,23 @@ const InvoiceForm = () => {
   };
 
   useEffect(() => {
-    const sumTotal = items.reduce((acc, item) => acc + (parseFloat(item.total) || 0), 0);
+    const sumTotal = items.reduce(
+      (acc, item) => acc + (parseFloat(item.total) || 0),
+      0,
+    );
     const cgst = sumTotal * 0.015;
     const sgst = sumTotal * 0.015;
     const grandTotal = sumTotal + cgst + sgst;
 
-    setTotals(prev => ({
+    setTotals((prev) => ({
       ...prev,
       taxableAmt: sumTotal.toFixed(2),
       cgst: cgst.toFixed(2),
       sgst: sgst.toFixed(2),
       grandTotal: Math.round(grandTotal),
-      balance: (Math.round(grandTotal) - (parseFloat(prev.received) || 0)).toFixed(2)
+      balance: (
+        Math.round(grandTotal) - (parseFloat(prev.received) || 0)
+      ).toFixed(2),
     }));
   }, [items, totals.received]);
 
@@ -160,7 +186,11 @@ const InvoiceForm = () => {
 
       e.preventDefault();
       const form = e.currentTarget;
-      const focusableElements = Array.from(form.querySelectorAll('input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button[type="submit"]'));
+      const focusableElements = Array.from(
+        form.querySelectorAll(
+          'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button[type="submit"]',
+        ),
+      );
       const index = focusableElements.indexOf(target);
 
       if (index > -1 && index < focusableElements.length - 1) {
@@ -182,9 +212,13 @@ const InvoiceForm = () => {
       return;
     }
     // Check at least one item with required details
-    const hasValidItem = items.some(item => item.prodName.trim() && item.gsWt && item.rate);
+    const hasValidItem = items.some(
+      (item) => item.prodName.trim() && item.gsWt && item.rate,
+    );
     if (!hasValidItem) {
-      toast.warn("At least one item with name, gross weight, and rate is required");
+      toast.warn(
+        "At least one item with name, gross weight, and rate is required",
+      );
       return;
     }
 
@@ -196,7 +230,7 @@ const InvoiceForm = () => {
       customerPhone: receiver.phone,
       customerAddress: receiver.address,
       customerGstin: receiver.gstin,
-      items: items.map(item => ({
+      items: items.map((item) => ({
         description: item.prodName,
         huid: item.huid,
         hsn: item.hsn,
@@ -220,16 +254,21 @@ const InvoiceForm = () => {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await apiFetch(`${import.meta.env.VITE_API_BASE_URL}/api/invoices`, {
-        method: "POST",
-        body: JSON.stringify(invoiceData),
-      });
+      const res = await apiFetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/invoices`,
+        {
+          method: "POST",
+          body: JSON.stringify(invoiceData),
+        },
+      );
       if (res && res.ok) {
         const data = await res.json();
         localStorage.setItem("generatedInvoice", JSON.stringify(data));
         navigate("/preview", { state: { from: "builder" } });
       } else {
-        const errorData = await res.json().catch(() => ({ message: "Commit failed" }));
+        const errorData = await res
+          .json()
+          .catch(() => ({ message: "Commit failed" }));
         toast.error(errorData.message || "Commit failed");
       }
     } catch (err) {
@@ -243,14 +282,23 @@ const InvoiceForm = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/5">
           <div className="space-y-1">
-            <button onClick={() => navigate("/type")} className="text-theme-muted hover:text-theme-teal text-xs font-bold uppercase mb-2 flex items-center gap-2">
+            <button
+              onClick={() => navigate("/type")}
+              className="text-theme-muted hover:text-theme-teal text-xs font-bold uppercase mb-2 flex items-center gap-2"
+            >
               <ArrowLeft className="w-3 h-3" /> Back
             </button>
-            <h1 className="text-3xl font-bold text-theme-primary tracking-tight">Invoice <span className="text-theme-teal">Builder</span></h1>
+            <h1 className="text-3xl font-bold text-theme-primary tracking-tight">
+              Invoice <span className="text-theme-teal">Builder</span>
+            </h1>
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate("/history", { state: { initialFirmId: selectedFirm._id, from: "builder" } })}
+              onClick={() =>
+                navigate("/history", {
+                  state: { initialFirmId: selectedFirm._id, from: "builder" },
+                })
+              }
               className="p-3 rounded-xl bg-theme-teal/10 hover:bg-theme-teal text-theme-teal hover:text-white transition-all border border-theme-teal/20"
               title="Firm History"
             >
@@ -258,17 +306,25 @@ const InvoiceForm = () => {
             </button>
             <ThemeToggle />
             <div className="text-right">
-              <p className="text-[10px] text-theme-muted uppercase font-bold tracking-widest">{selectedFirm.name}</p>
+              <p className="text-[10px] text-theme-muted uppercase font-bold tracking-widest">
+                {selectedFirm.name}
+              </p>
               <input
                 className="bg-transparent border-none text-right text-xs text-theme-teal font-mono focus:outline-none focus:ring-1 focus:ring-teal-500/30 rounded px-1 w-32"
                 value={invoiceMeta.invoiceNo}
-                onChange={e => setInvoiceMeta({ ...invoiceMeta, invoiceNo: e.target.value })}
+                onChange={(e) =>
+                  setInvoiceMeta({ ...invoiceMeta, invoiceNo: e.target.value })
+                }
               />
             </div>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} onKeyDown={handleEnterNavigation} className="space-y-8">
+        <form
+          onSubmit={handleSubmit}
+          onKeyDown={handleEnterNavigation}
+          className="space-y-8"
+        >
           {/* Client Details */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 card-modern space-y-6 animate-fade-in delay-100">
@@ -280,25 +336,46 @@ const InvoiceForm = () => {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <span className="text-[10px] text-theme-muted ml-1 font-bold flex items-center gap-1"><User className="w-3 h-3" /> CLIENT NAME</span>
-                  <input className="input-field" placeholder="Full Name" value={receiver.name} onChange={e => setReceiver({ ...receiver, name: e.target.value })} />
+                  <span className="text-[10px] text-theme-muted ml-1 font-bold flex items-center gap-1">
+                    <User className="w-3 h-3" /> CLIENT NAME
+                  </span>
+                  <input
+                    className="input-field"
+                    placeholder="Full Name"
+                    value={receiver.name}
+                    onChange={(e) =>
+                      setReceiver({ ...receiver, name: e.target.value })
+                    }
+                  />
                 </div>
                 <div className="space-y-1">
-                  <span className="text-[10px] text-theme-muted ml-1 font-bold flex items-center gap-1"><Phone className="w-3 h-3" /> PHONE NO.</span>
+                  <span className="text-[10px] text-theme-muted ml-1 font-bold flex items-center gap-1">
+                    <Phone className="w-3 h-3" /> PHONE NO.
+                  </span>
                   <input
                     className="input-field"
                     placeholder="Enter 10 Digit Phone"
                     value={receiver.phone}
                     maxLength={10}
-                    onChange={e => {
+                    onChange={(e) => {
                       const val = e.target.value.replace(/\D/g, "");
-                      if (val.length <= 10) setReceiver({ ...receiver, phone: val });
+                      if (val.length <= 10)
+                        setReceiver({ ...receiver, phone: val });
                     }}
                   />
                 </div>
                 <div className="space-y-1 md:col-span-2">
-                  <span className="text-[10px] text-theme-muted ml-1 font-bold flex items-center gap-1"><MapPin className="w-3 h-3" /> ADDRESS</span>
-                  <input className="input-field" placeholder="Complete address..." value={receiver.address} onChange={e => setReceiver({ ...receiver, address: e.target.value })} />
+                  <span className="text-[10px] text-theme-muted ml-1 font-bold flex items-center gap-1">
+                    <MapPin className="w-3 h-3" /> ADDRESS
+                  </span>
+                  <input
+                    className="input-field"
+                    placeholder="Complete address..."
+                    value={receiver.address}
+                    onChange={(e) =>
+                      setReceiver({ ...receiver, address: e.target.value })
+                    }
+                  />
                 </div>
               </div>
             </div>
@@ -312,16 +389,45 @@ const InvoiceForm = () => {
               </h3>
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <span className="text-[10px] text-gray-500 ml-1 font-bold flex items-center gap-1"><Hash className="w-3 h-3" /> INVOICE NO.</span>
-                  <input className="input-field font-mono" value={invoiceMeta.invoiceNo} onChange={e => setInvoiceMeta({ ...invoiceMeta, invoiceNo: e.target.value })} />
+                  <span className="text-[10px] text-gray-500 ml-1 font-bold flex items-center gap-1">
+                    <Hash className="w-3 h-3" /> INVOICE NO.
+                  </span>
+                  <input
+                    className="input-field font-mono"
+                    value={invoiceMeta.invoiceNo}
+                    onChange={(e) =>
+                      setInvoiceMeta({
+                        ...invoiceMeta,
+                        invoiceNo: e.target.value,
+                      })
+                    }
+                  />
                 </div>
                 <div className="space-y-1">
-                  <span className="text-[10px] text-gray-500 ml-1 font-bold flex items-center gap-1"><Calendar className="w-3 h-3" /> INVOICE DATE</span>
-                  <input type="date" className="input-field" value={invoiceMeta.date} onChange={e => setInvoiceMeta({ ...invoiceMeta, date: e.target.value })} />
+                  <span className="text-[10px] text-gray-500 ml-1 font-bold flex items-center gap-1">
+                    <Calendar className="w-3 h-3" /> INVOICE DATE
+                  </span>
+                  <input
+                    type="date"
+                    className="input-field"
+                    value={invoiceMeta.date}
+                    onChange={(e) =>
+                      setInvoiceMeta({ ...invoiceMeta, date: e.target.value })
+                    }
+                  />
                 </div>
                 <div className="space-y-1">
-                  <span className="text-[10px] text-gray-500 ml-1 font-bold flex items-center gap-1"><Tags className="w-3 h-3" /> GSTIN (IF ANY)</span>
-                  <input className="input-field font-mono text-xs" placeholder="Optional" value={receiver.gstin} onChange={e => setReceiver({ ...receiver, gstin: e.target.value })} />
+                  <span className="text-[10px] text-gray-500 ml-1 font-bold flex items-center gap-1">
+                    <Tags className="w-3 h-3" /> GSTIN (IF ANY)
+                  </span>
+                  <input
+                    className="input-field font-mono text-xs"
+                    placeholder="Optional"
+                    value={receiver.gstin}
+                    onChange={(e) =>
+                      setReceiver({ ...receiver, gstin: e.target.value })
+                    }
+                  />
                 </div>
               </div>
             </div>
@@ -330,7 +436,9 @@ const InvoiceForm = () => {
           {/* Table */}
           <div className="card-modern !p-0 overflow-hidden border-white/5 shadow-xl">
             <div className="p-3 bg-white/5 border-b border-white/5 flex justify-between items-center">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Transaction Items</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                Transaction Items
+              </span>
               <button
                 type="button"
                 onClick={handleAddItem}
@@ -346,7 +454,9 @@ const InvoiceForm = () => {
               <table className="w-full text-[10px] min-w-[900px]">
                 <thead className="bg-white/5 border-b border-white/5 text-gray-400 uppercase whitespace-nowrap">
                   <tr>
-                    <th className="px-4 py-4 text-left min-w-[180px]">Product</th>
+                    <th className="px-4 py-4 text-left min-w-[180px]">
+                      Product
+                    </th>
                     <th className="px-3 py-4 w-24">HUID</th>
                     <th className="px-3 py-4 text-right w-24">Gross</th>
                     <th className="px-3 py-4 text-right w-24">Net</th>
@@ -359,33 +469,105 @@ const InvoiceForm = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 text-sm whitespace-nowrap">
-                  {items.map(item => (
+                  {items.map((item) => (
                     <tr key={item.id} className="hover:bg-white/[0.02]">
                       <td className="px-4 py-4">
-                        <input className="bg-transparent border-none outline-none w-full focus:text-teal-400" placeholder="Item name" value={item.prodName} onChange={e => handleItemChange(item.id, 'prodName', e.target.value)} />
+                        <input
+                          className="bg-transparent border-none outline-none w-full focus:text-teal-400"
+                          placeholder="Item name"
+                          value={item.prodName}
+                          onChange={(e) =>
+                            handleItemChange(
+                              item.id,
+                              "prodName",
+                              e.target.value,
+                            )
+                          }
+                        />
                       </td>
                       <td className="px-3 py-4 text-center">
-                        <input className="bg-transparent border-none outline-none w-full text-center focus:text-teal-400 font-mono" placeholder="-" value={item.huid} onChange={e => handleItemChange(item.id, 'huid', e.target.value)} />
+                        <input
+                          className="bg-transparent border-none outline-none w-full text-center focus:text-teal-400 font-mono"
+                          placeholder="-"
+                          value={item.huid}
+                          onChange={(e) =>
+                            handleItemChange(item.id, "huid", e.target.value)
+                          }
+                        />
                       </td>
                       <td className="px-3 py-4 text-right font-bold">
-                        <input type="number" className="bg-transparent border-none outline-none w-full text-right focus:text-teal-400" placeholder="0" value={item.gsWt} onChange={e => handleItemChange(item.id, 'gsWt', e.target.value)} />
+                        <input
+                          type="number"
+                          className="bg-transparent border-none outline-none w-full text-right focus:text-teal-400"
+                          placeholder="0"
+                          value={item.gsWt}
+                          onChange={(e) =>
+                            handleItemChange(item.id, "gsWt", e.target.value)
+                          }
+                        />
                       </td>
-                      <td className="px-3 py-4 text-right text-teal-500 font-bold">{item.ntWt || '0.00'}</td>
+                      <td className="px-3 py-4 text-right text-teal-500 font-bold">
+                        {item.ntWt || "0.00"}
+                      </td>
                       <td className="px-3 py-4 text-center">
-                        <input className="bg-transparent border-none outline-none w-full text-center focus:text-teal-400" value={item.purity} onChange={e => handleItemChange(item.id, 'purity', e.target.value)} />
+                        <input
+                          className="bg-transparent border-none outline-none w-full text-center focus:text-teal-400"
+                          value={item.purity}
+                          onChange={(e) =>
+                            handleItemChange(item.id, "purity", e.target.value)
+                          }
+                        />
                       </td>
                       <td className="px-3 py-4 text-right">
-                        <input type="number" className="bg-transparent border-none outline-none w-full text-right focus:text-teal-400 font-mono" placeholder="0" value={item.rate} onChange={e => handleItemChange(item.id, 'rate', e.target.value)} />
+                        <input
+                          type="number"
+                          className="bg-transparent border-none outline-none w-full text-right focus:text-teal-400 font-mono"
+                          placeholder="0"
+                          value={item.rate}
+                          onChange={(e) =>
+                            handleItemChange(item.id, "rate", e.target.value)
+                          }
+                        />
                       </td>
                       <td className="px-3 py-4 text-right">
-                        <input type="number" className="bg-transparent border-none outline-none w-full text-right focus:text-teal-400" placeholder="0" value={item.mkgCharg} onChange={e => handleItemChange(item.id, 'mkgCharg', e.target.value)} />
+                        <input
+                          type="number"
+                          className="bg-transparent border-none outline-none w-full text-right focus:text-teal-400"
+                          placeholder="0"
+                          value={item.mkgCharg}
+                          onChange={(e) =>
+                            handleItemChange(
+                              item.id,
+                              "mkgCharg",
+                              e.target.value,
+                            )
+                          }
+                        />
                       </td>
                       <td className="px-3 py-4 text-right">
-                        <input type="number" className="bg-transparent border-none outline-none w-full text-right focus:text-teal-400 font-mono" placeholder="0" value={item.hallmark} onChange={e => handleItemChange(item.id, 'hallmark', e.target.value)} />
+                        <input
+                          type="number"
+                          className="bg-transparent border-none outline-none w-full text-right focus:text-teal-400 font-mono"
+                          placeholder="0"
+                          value={item.hallmark}
+                          onChange={(e) =>
+                            handleItemChange(
+                              item.id,
+                              "hallmark",
+                              e.target.value,
+                            )
+                          }
+                        />
                       </td>
-                      <td className="px-4 py-4 text-right font-bold text-theme-primary">₹{(parseFloat(item.total) || 0).toLocaleString()}</td>
+                      <td className="px-4 py-4 text-right font-bold text-theme-primary">
+                        ₹{(parseFloat(item.total) || 0).toLocaleString()}
+                      </td>
                       <td className="px-4 py-4 text-center">
-                        <button type="button" onClick={() => handleRemoveItem(item.id)} className="text-gray-600 hover:text-red-500 transition-colors">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveItem(item.id)}
+                          className="text-gray-600 hover:text-red-500 transition-colors"
+                        >
                           <Trash2 className="w-5 h-5" />
                         </button>
                       </td>
@@ -400,36 +582,68 @@ const InvoiceForm = () => {
           <div className="flex flex-col md:flex-row justify-between gap-8 py-8 border-t border-white/10">
             <div className="flex-1 max-w-sm space-y-4">
               <div className="space-y-1">
-                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest pl-1">Cash Received</span>
+                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest pl-1">
+                  Cash Received
+                </span>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-teal-500 font-bold text-lg">₹</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-teal-500 font-bold text-lg">
+                    ₹
+                  </span>
                   <input
                     type="number"
                     className="input-field !py-4 !pl-10 text-xl font-bold font-mono"
                     placeholder="0"
                     value={totals.received}
-                    onChange={e => setTotals({ ...totals, received: e.target.value })}
+                    onChange={(e) =>
+                      setTotals({ ...totals, received: e.target.value })
+                    }
                     onFocus={() => setTotals({ ...totals, received: "" })}
                   />
                 </div>
               </div>
               <div className="flex justify-between items-center px-4 py-3 bg-white/5 rounded-xl border border-white/5">
-                <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Remaining Balance</span>
-                <span className={`text-lg font-bold font-mono ${(parseFloat(totals.balance) || 0) > 0 ? 'text-red-500' : 'text-teal-500'}`}>
-                  ₹{Math.abs(parseFloat(totals.balance) || 0).toLocaleString()} {(parseFloat(totals.balance) || 0) > 0 ? 'DR' : 'CR'}
+                <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">
+                  Remaining Balance
+                </span>
+                <span
+                  className={`text-lg font-bold font-mono ${(parseFloat(totals.balance) || 0) > 0 ? "text-red-500" : "text-teal-500"}`}
+                >
+                  ₹{Math.abs(parseFloat(totals.balance) || 0).toLocaleString()}{" "}
+                  {(parseFloat(totals.balance) || 0) > 0 ? "DR" : "CR"}
                 </span>
               </div>
             </div>
 
             <div className="w-full md:w-80 space-y-3">
-              <div className="flex justify-between text-xs text-theme-muted px-1"><span>Taxable Value</span> <span className="text-theme-primary font-mono">₹{(parseFloat(totals.taxableAmt) || 0).toLocaleString()}</span></div>
-              <div className="flex justify-between text-xs text-theme-muted px-1"><span>GST (3%)</span> <span className="text-theme-secondary font-mono">₹{((parseFloat(totals.cgst) || 0) + (parseFloat(totals.sgst) || 0)).toLocaleString()}</span></div>
+              <div className="flex justify-between text-xs text-theme-muted px-1">
+                <span>Taxable Value</span>{" "}
+                <span className="text-theme-primary font-mono">
+                  ₹{(parseFloat(totals.taxableAmt) || 0).toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs text-theme-muted px-1">
+                <span>GST (3%)</span>{" "}
+                <span className="text-theme-secondary font-mono">
+                  ₹
+                  {(
+                    (parseFloat(totals.cgst) || 0) +
+                    (parseFloat(totals.sgst) || 0)
+                  ).toLocaleString()}
+                </span>
+              </div>
               <div className="h-px bg-white/10 my-2"></div>
               <div className="flex justify-between items-center bg-teal-500/10 p-4 rounded-xl border border-teal-500/20">
-                <span className="text-sm font-bold text-theme-primary uppercase tracking-tight">Net Amount</span>
-                <span className="text-2xl font-bold text-theme-primary font-mono">₹{(parseFloat(totals.grandTotal) || 0).toLocaleString()}</span>
+                <span className="text-sm font-bold text-theme-primary uppercase tracking-tight">
+                  Net Amount
+                </span>
+                <span className="text-2xl font-bold text-theme-primary font-mono">
+                  ₹{(parseFloat(totals.grandTotal) || 0).toLocaleString()}
+                </span>
               </div>
-              <button type="submit" className="w-full btn-primary !rounded-xl !py-4 shadow-xl mt-4">
+              <button
+                type="submit"
+                className="w-full btn-primary !rounded-xl !py-4 shadow-xl mt-4"
+              >
                 <Printer className="w-5 h-5" /> Save & Print
               </button>
             </div>

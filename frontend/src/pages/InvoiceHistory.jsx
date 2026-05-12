@@ -398,42 +398,6 @@ const InvoiceHistory = () => {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          {/* Edit button only if within 1 day of creation */}
-                          {(() => {
-                            const createdAt = new Date(inv.createdAt);
-                            const now = new Date();
-                            const diffMs = now - createdAt;
-                            const oneDayMs = 24 * 60 * 60 * 1000;
-                            if (diffMs <= oneDayMs) {
-                              return (
-                                <button
-                                  onClick={() =>
-                                    navigate("/invoice-edit", {
-                                      state: { invoice: inv },
-                                    })
-                                  }
-                                  className="p-2 rounded-lg bg-yellow-400/10 text-yellow-600 hover:bg-yellow-400 hover:text-white transition-all"
-                                  title="Edit Invoice"
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M15.232 5.232l3.536 3.536M9 13h3l8-8a2.828 2.828 0 00-4-4l-8 8v3zm0 0v3a2 2 0 002 2h3"
-                                    />
-                                  </svg>
-                                </button>
-                              );
-                            }
-                            return null;
-                          })()}
                           <button
                             onClick={() => handleDelete(inv._id)}
                             className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"

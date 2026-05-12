@@ -16,7 +16,9 @@ const InvoiceType = () => {
   useEffect(() => {
     const fetchTypes = async () => {
       try {
-        const res = await apiFetch(`${import.meta.env.VITE_API_BASE_URL}/api/invoice-types`);
+        const res = await apiFetch(
+          `${import.meta.env.VITE_API_BASE_URL}/api/invoice-types`,
+        );
         if (res && res.ok) {
           const data = await res.json();
           setTypes(data);
@@ -94,9 +96,7 @@ const InvoiceType = () => {
               <h3 className="text-xl font-bold text-theme-primary mb-2 group-hover:text-theme-teal transition-all uppercase">
                 {type.title}
               </h3>
-              <p className="text-theme-secondary text-xs">
-                {type.description}
-              </p>
+              <p className="text-theme-secondary text-xs">{type.description}</p>
             </button>
           ))}
         </div>

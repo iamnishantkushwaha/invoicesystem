@@ -9,7 +9,6 @@ import InvoiceType from "./pages/InvoiceType";
 import InvoiceForm from "./pages/InvoiceForm";
 import InvoicePreview from "./pages/InvoicePreview";
 import InvoiceHistory from "./pages/InvoiceHistory";
-import InvoiceEditor from "./pages/InvoiceEditor";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 import { useEffect } from "react";
@@ -70,14 +69,6 @@ function App() {
               element={
                 <ProtectedRoute>
                   <InvoiceForm />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/invoice-edit"
-              element={
-                <ProtectedRoute>
-                  <InvoiceEditor />
                 </ProtectedRoute>
               }
             />
